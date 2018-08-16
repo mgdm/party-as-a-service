@@ -25,9 +25,9 @@
         e.preventDefault();
     }
 
-    const makePositions = function (frameCount, width, height, offset) {
-        const ORIGIN_X = (OUTPUT_WIDTH - width) / 2;
-        const ORIGIN_Y = (OUTPUT_HEIGHT - height) / 2;
+    const makePositions = function (frameCount, offset) {
+        const ORIGIN_X = (OUTPUT_WIDTH - RENDERED_WIDTH) / 2;
+        const ORIGIN_Y = (OUTPUT_HEIGHT - RENDERED_HEIGHT) / 2;
 
         let result = [];
         for (let i = 0; i < frameCount; i++) {
@@ -74,20 +74,11 @@
         const img = new Image();
         img.src = e.target.result;
         const rave = document.getElementById('rave').checked;
+        const transparent = document.getElementById('transparent').checked;
 
         output.childNodes.forEach(child => output.removeChild(child));
 
         const canvas = document.createElement('canvas');
-
-        let RENDERED_WIDTH;
-        let RENDERED_HEIGHT;
-        if (rave) {
-            RENDERED_WIDTH = 116;
-            RENDERED_HEIGHT = 116;
-        } else {
-            RENDERED_WIDTH = 108;
-            RENDERED_HEIGHT = 108;
-        }
 
         canvas.width = RENDERED_WIDTH;
         canvas.height = RENDERED_HEIGHT;
@@ -105,20 +96,23 @@
 
         FRAME_COLOURS.forEach(rgb => frames.push(colourize(greyScale, canvas.width, canvas.height, rgb)));
 
-        const b64 = render(frames, rave);
+        const b64 = render(frames, rave, transparent);
         const outputImage = document.createElement('img');
         outputImage.src = b64;
 
         output.appendChild(outputImage);
     }
 
-    const render = function (frames, rave) {
+    const render = function (frames, rave, transparent) {
         const encoder = new GIFEncoder();
         encoder.setRepeat(0);
         encoder.setDelay(500 / frames.length);
-        //encoder.setTransparent(0xffffff);
         encoder.setQuality(5);
         encoder.start();
+
+        if (transparent) {
+            encoder.setTransparent(0xffffff);
+        }
 
         const canvas = document.createElement('canvas');
         canvas.width = OUTPUT_WIDTH;
@@ -166,7 +160,7 @@
     }
 
     function renderPartyImage(frames, ctx, canvas, encoder) {
-        const positions = makePositions(frames.length, 16);
+        const positions = makePositions(frames.length, 8);
     
         for (let i = 0; i < frames.length; i++) {
             const frame = frames[i];
@@ -188,6 +182,8 @@
             tmpCtx.fillStyle = 'rgba(255, 255, 255, 255)';
             tmpCtx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
             tmpCtx.putImageData(frame, 0, 0, 0, 0, frame.width, frame.height);
+
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.save();
             ctx.translate(canvas.width / 2, canvas.height / 2);
             ctx.rotate(currentAngle);
