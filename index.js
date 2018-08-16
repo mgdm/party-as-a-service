@@ -75,26 +75,36 @@
         img.src = e.target.result;
         const rave = document.getElementById('rave').checked;
         const transparent = document.getElementById('transparent').checked;
-
-        output.childNodes.forEach(child => output.removeChild(child));
-
         const canvas = document.createElement('canvas');
 
-        canvas.width = RENDERED_WIDTH;
-        canvas.height = RENDERED_HEIGHT;
+        let width;
+        let height;
+
+        if (rave) {
+            width = OUTPUT_WIDTH;
+            height = OUTPUT_HEIGHT;
+        } else {
+            width = RENDERED_WIDTH;
+            height = RENDERED_HEIGHT;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        output.childNodes.forEach(child => output.removeChild(child));
         
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = 'rgba(255, 255, 255, 255)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, width, height);
 
-        const imageHeight = RENDERED_HEIGHT * img.height / img.width;
-        const yPos = (RENDERED_HEIGHT - imageHeight) / 2
+        const imageHeight = height * img.height / img.width;
+        const yPos = (height - imageHeight) / 2
 
-        ctx.drawImage(img, 0, yPos, RENDERED_WIDTH, imageHeight);
+        ctx.drawImage(img, 0, yPos, width, imageHeight);
         const greyScale = greyscaleImage(getImageData(canvas));
         const frames = [];
 
-        FRAME_COLOURS.forEach(rgb => frames.push(colourize(greyScale, canvas.width, canvas.height, rgb)));
+        FRAME_COLOURS.forEach(rgb => frames.push(colourize(greyScale, width, height, rgb)));
 
         const b64 = render(frames, rave, transparent);
         const outputImage = document.createElement('img');
