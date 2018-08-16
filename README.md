@@ -18,6 +18,6 @@ gifsicle -O3 --colors 256 -i theOutputFromThisThing.gif -o OptimizedOutput.gif
 
 ## Todo
 
-[ ] Figure out why you sometimes need to drag the image on twice
-[ ] Optimise the output so they're always less than 64KB in size, as this is important for Slack.
+- [ ] Figure out why you sometimes need to drag the image on twice
+- [ ] Optimise the output so they're always less than 64KB in size, as this is important for Slack.
 
