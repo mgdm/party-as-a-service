@@ -25,9 +25,9 @@
         e.preventDefault();
     }
 
-    const makePositions = function (frameCount, width, height, offset) {
-        const ORIGIN_X = (OUTPUT_WIDTH - width) / 2;
-        const ORIGIN_Y = (OUTPUT_HEIGHT - height) / 2;
+    const makePositions = function (frameCount, offset) {
+        const ORIGIN_X = (OUTPUT_WIDTH - RENDERED_WIDTH) / 2;
+        const ORIGIN_Y = (OUTPUT_HEIGHT - RENDERED_HEIGHT) / 2;
 
         let result = [];
         for (let i = 0; i < frameCount; i++) {
@@ -37,6 +37,7 @@
             result.push([x, y]);
         }
 
+        result.reverse();
         return result;
     }
 
@@ -74,51 +75,56 @@
         const img = new Image();
         img.src = e.target.result;
         const rave = document.getElementById('rave').checked;
+        const transparent = document.getElementById('transparent').checked;
+        const reverse = document.getElementById('reverse').checked;
+        const canvas = document.createElement('canvas');
+
+        let width;
+        let height;
+
+        if (rave) {
+            width = OUTPUT_WIDTH;
+            height = OUTPUT_HEIGHT;
+        } else {
+            width = RENDERED_WIDTH;
+            height = RENDERED_HEIGHT;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
 
         output.childNodes.forEach(child => output.removeChild(child));
 
-        const canvas = document.createElement('canvas');
-
-        let RENDERED_WIDTH;
-        let RENDERED_HEIGHT;
-        if (rave) {
-            RENDERED_WIDTH = 116;
-            RENDERED_HEIGHT = 116;
-        } else {
-            RENDERED_WIDTH = 108;
-            RENDERED_HEIGHT = 108;
-        }
-
-        canvas.width = RENDERED_WIDTH;
-        canvas.height = RENDERED_HEIGHT;
-        
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = 'rgba(255, 255, 255, 255)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, width, height);
 
-        const imageHeight = RENDERED_HEIGHT * img.height / img.width;
-        const yPos = (RENDERED_HEIGHT - imageHeight) / 2
+        const imageHeight = height * img.height / img.width;
+        const yPos = (height - imageHeight) / 2
 
-        ctx.drawImage(img, 0, yPos, RENDERED_WIDTH, imageHeight);
+        ctx.drawImage(img, 0, yPos, width, imageHeight);
         const greyScale = greyscaleImage(getImageData(canvas));
         const frames = [];
 
-        FRAME_COLOURS.forEach(rgb => frames.push(colourize(greyScale, canvas.width, canvas.height, rgb)));
+        FRAME_COLOURS.forEach(rgb => frames.push(colourize(greyScale, width, height, rgb)));
 
-        const b64 = render(frames, rave);
+        const b64 = render(frames, rave, transparent, reverse);
         const outputImage = document.createElement('img');
         outputImage.src = b64;
 
         output.appendChild(outputImage);
     }
 
-    const render = function (frames, rave) {
+    const render = function (frames, rave, transparent, reverse) {
         const encoder = new GIFEncoder();
         encoder.setRepeat(0);
         encoder.setDelay(500 / frames.length);
-        //encoder.setTransparent(0xffffff);
         encoder.setQuality(5);
         encoder.start();
+
+        if (transparent) {
+            encoder.setTransparent(0xffffff);
+        }
 
         const canvas = document.createElement('canvas');
         canvas.width = OUTPUT_WIDTH;
@@ -127,9 +133,9 @@
         ctx.fillStyle = 'rgba(255, 255, 255, 255)';
 
         if (rave) {
-            renderRaveImage(frames, ctx, canvas, encoder);
+            renderRaveImage(frames, ctx, canvas, encoder, reverse);
         } else {
-            renderPartyImage(frames, ctx, canvas, encoder);
+            renderPartyImage(frames, ctx, canvas, encoder, reverse);
         }
 
         encoder.finish();
@@ -165,9 +171,13 @@
         return getImageData(canvas);
     }
 
-    function renderPartyImage(frames, ctx, canvas, encoder) {
-        const positions = makePositions(frames.length, 16);
-    
+    function renderPartyImage(frames, ctx, canvas, encoder, reverse) {
+        const positions = makePositions(frames.length, 8);
+
+        if (reverse) {
+            positions.reverse();
+        }
+
         for (let i = 0; i < frames.length; i++) {
             const frame = frames[i];
             const pos = positions[i];
@@ -177,8 +187,13 @@
         }
     }
 
-    function renderRaveImage(frames, ctx, canvas, encoder) {
-        const deltaR = Math.PI * 2 / frames.length;
+    function renderRaveImage(frames, ctx, canvas, encoder, reverse) {
+        let deltaR = Math.PI * 2 / frames.length;
+
+        if (reverse) {
+            deltaR = -deltaR;
+        }
+
         let currentAngle = 0;
 
         for (let i = 0; i < frames.length; i++) {
@@ -188,6 +203,8 @@
             tmpCtx.fillStyle = 'rgba(255, 255, 255, 255)';
             tmpCtx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
             tmpCtx.putImageData(frame, 0, 0, 0, 0, frame.width, frame.height);
+
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.save();
             ctx.translate(canvas.width / 2, canvas.height / 2);
             ctx.rotate(currentAngle);
