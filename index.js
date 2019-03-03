@@ -94,7 +94,7 @@
         canvas.height = height;
 
         output.childNodes.forEach(child => output.removeChild(child));
-
+        
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = 'rgba(255, 255, 255, 255)';
         ctx.fillRect(0, 0, width, height);
